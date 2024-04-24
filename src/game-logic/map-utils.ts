@@ -4,7 +4,7 @@ export const createMapImageFromData = (
   width: number,
   height: number,
   tileSize: number,
-  mapCollisionTiles: Set<number>
+  mapCollisionTiles: any
 ) => {
   const canvas = document.createElement("canvas");
   canvas.width = width * tileSize;
@@ -17,7 +17,10 @@ export const createMapImageFromData = (
   ctx.fill();
 
   const collisionSet: any = {};
-
+  const collisionCollectionKeys = Object.keys(mapCollisionTiles);
+  collisionCollectionKeys.forEach((i) => {
+    collisionSet[i] = {};
+  });
   data.forEach((item) => {
     const x = xcount;
     xcount += 1;
@@ -30,8 +33,11 @@ export const createMapImageFromData = (
     const tileY = item % 24 ? Math.floor(item / 24) : Math.floor(item / 24) - 1;
     const remainder = item - (item >= 24 ? tileY * 24 : 0);
     const tileX = remainder ? remainder - 1 : 23;
-    if (mapCollisionTiles.has(item)) {
-      collisionSet[`${x}-${y}`] = [x, y];
+    for (let key of collisionCollectionKeys) {
+      if (mapCollisionTiles[key].has(item)) {
+        collisionSet[key][`${x}-${y}`] = [x, y];
+        break;
+      }
     }
     ctx.drawImage(
       image,

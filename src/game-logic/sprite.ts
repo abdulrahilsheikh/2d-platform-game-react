@@ -1,12 +1,14 @@
 import { PositionProp } from "./interfaces";
 
-interface ISpriteClass {
+export interface ISpriteClass {
   position: PositionProp;
   imageSrc: string;
-  frameRate: number;
-  frameBuffer: number;
-  scale: number;
-  ctx: any;
+  frameRate?: number;
+  frameBuffer?: number;
+  scale?: number;
+  ctx: CanvasRenderingContext2D;
+  isVerticalSet?: boolean;
+  invertDirection?: boolean;
 }
 
 export class Sprite {
@@ -21,6 +23,10 @@ export class Sprite {
   frameBuffer;
   elapsedFrames;
   ctx;
+  isVerticalSet;
+  invertDirection;
+  rotate = false;
+  angle = 0;
   constructor({
     position,
     imageSrc,
@@ -28,6 +34,8 @@ export class Sprite {
     frameBuffer = 3,
     scale = 1,
     ctx,
+    isVerticalSet = false,
+    invertDirection = false,
   }: ISpriteClass) {
     this.position = position;
     this.scale = scale;
@@ -35,8 +43,13 @@ export class Sprite {
 
     this.image = new Image();
     this.image.onload = () => {
-      this.width = (this.image.width / this.frameRate) * this.scale;
-      this.height = this.image.height * this.scale;
+      if (isVerticalSet) {
+        this.width = this.image.width * this.scale;
+        this.height = (this.image.height / this.frameRate) * this.scale;
+      } else {
+        this.width = (this.image.width / this.frameRate) * this.scale;
+        this.height = this.image.height * this.scale;
+      }
       this.loaded = true;
     };
     this.ctx = ctx;
@@ -45,31 +58,69 @@ export class Sprite {
     this.currentFrame = 0;
     this.frameBuffer = frameBuffer;
     this.elapsedFrames = 0;
+    this.isVerticalSet = isVerticalSet;
+    this.invertDirection = invertDirection;
   }
 
   draw() {
     if (!this.image) return;
 
-    const cropbox = {
-      position: {
-        x: this.currentFrame * (this.image.width / this.frameRate),
-        y: 0,
-      },
-      width: this.image.width / this.frameRate,
-      height: this.image.height,
-    };
-
-    this.ctx.drawImage(
-      this.image,
-      cropbox.position.x,
-      cropbox.position.y,
-      cropbox.width,
-      cropbox.height,
-      this.position.x,
-      this.position.y,
-      this.width,
-      this.height
-    );
+    const cropbox = this.isVerticalSet
+      ? {
+          position: {
+            x: 0,
+            y: this.currentFrame * (this.image.height / this.frameRate),
+          },
+          width: this.image.width,
+          height: this.image.height / this.frameRate,
+        }
+      : {
+          position: {
+            x: this.currentFrame * (this.image.width / this.frameRate),
+            y: 0,
+          },
+          width: this.image.width / this.frameRate,
+          height: this.image.height,
+        };
+    if (this.invertDirection) {
+      this.ctx.scale(-1, 1);
+      if (this.rotate) {
+        this.rotateFrame();
+      }
+      this.ctx.drawImage(
+        this.image,
+        cropbox.position.x,
+        cropbox.position.y,
+        cropbox.width,
+        cropbox.height,
+        -this.position.x - this.width,
+        this.position.y,
+        this.width,
+        this.height
+      );
+      if (this.rotate) {
+        this.resetRotateFrame();
+      }
+      this.ctx.scale(-1, 1);
+    } else {
+      if (this.rotate) {
+        this.rotateFrame();
+      }
+      this.ctx.drawImage(
+        this.image,
+        cropbox.position.x,
+        cropbox.position.y,
+        cropbox.width,
+        cropbox.height,
+        this.position.x,
+        this.position.y,
+        this.width,
+        this.height
+      );
+      if (this.rotate) {
+        this.resetRotateFrame();
+      }
+    }
   }
 
   update() {
@@ -83,6 +134,55 @@ export class Sprite {
     if (this.elapsedFrames % this.frameBuffer === 0) {
       if (this.currentFrame < this.frameRate - 1) this.currentFrame++;
       else this.currentFrame = 0;
+    }
+  }
+  resetRotateFrame() {
+    if (this.invertDirection) {
+      this.ctx.translate(
+        -(this.position.x + this.width / 2),
+        this.position.y + this.height / 2
+      );
+
+      this.ctx.rotate(this.angle);
+      this.ctx.translate(
+        this.position.x + this.width / 2,
+        -(this.position.y + this.height / 2)
+      );
+    } else {
+      this.ctx.translate(
+        this.position.x + this.width / 2,
+        this.position.y + this.height / 2
+      );
+      this.ctx.rotate(this.angle);
+      this.ctx.translate(
+        -(this.position.x + this.width / 2),
+        -(this.position.y + this.height / 2)
+      );
+    }
+  }
+
+  rotateFrame() {
+    if (this.invertDirection) {
+      this.ctx.translate(
+        -(this.position.x + this.width / 2),
+        this.position.y + this.height / 2
+      );
+
+      this.ctx.rotate(-this.angle);
+      this.ctx.translate(
+        this.position.x + this.width / 2,
+        -(this.position.y + this.height / 2)
+      );
+    } else {
+      this.ctx.translate(
+        this.position.x + this.width / 2,
+        this.position.y + this.height / 2
+      );
+      this.ctx.rotate(this.angle);
+      this.ctx.translate(
+        -(this.position.x + this.width / 2),
+        -(this.position.y + this.height / 2)
+      );
     }
   }
 }
