@@ -22,6 +22,7 @@ const DOWN_KEY = {
   right: false,
   top: false,
   down: false,
+  mouseLeft: false,
 };
 const debug = false;
 
@@ -144,6 +145,7 @@ export const levelBuilder = (canvas: HTMLCanvasElement) => {
       offset: { x: 18, y: 10 },
     },
   });
+
   document.addEventListener("keydown", (e) => {
     if (e.key == "d") {
       DOWN_KEY.right = true;
@@ -171,6 +173,16 @@ export const levelBuilder = (canvas: HTMLCanvasElement) => {
     }
     if (e.key == "s") {
       DOWN_KEY.down = false;
+    }
+  });
+  document.addEventListener("mousedown", (e) => {
+    if (e.button == 0) {
+      DOWN_KEY.mouseLeft = true;
+    }
+  });
+  document.addEventListener("mouseup", (e) => {
+    if (e.button == 0) {
+      DOWN_KEY.mouseLeft = false;
     }
   });
   const updateUI = () => {
@@ -208,11 +220,18 @@ export const levelBuilder = (canvas: HTMLCanvasElement) => {
           ctx.fill();
         }
       }
-      player.weapon.angle = Math.atan2(
+      player.weapon.computeAngle(
         player.hitbox.position.y - (MOUSE_POS.y / SCALE + camera.position.y),
         player.hitbox.position.x - (MOUSE_POS.x / SCALE + camera.position.x)
       );
+
+      // = Math.atan2(
+      //   player.hitbox.position.y - (MOUSE_POS.y / SCALE + camera.position.y),
+      //   player.hitbox.position.x - (MOUSE_POS.x / SCALE + camera.position.x)
+      // );
       player.weapon.mousePos = MOUSE_POS;
+      player.weapon.isFiring = DOWN_KEY.mouseLeft;
+      player.weapon.drawGun();
       ctx.beginPath();
       ctx.moveTo(player.position.x, player.position.y);
 
